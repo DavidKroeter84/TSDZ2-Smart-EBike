@@ -1607,52 +1607,52 @@ struct_config_vars* get_configuration_variables (void)
 
 void check_system()
 {
-  #define MOTOR_BLOCKED_COUNTER_THRESHOLD             30    // 30  =>  3 seconds
-  #define MOTOR_BLOCKED_MOTOR_CURRENT_THRESHOLD_X5    50     // 8  =>  (50 * 0.156A) / 5 = 1.56 ampere
+  #define MOTOR_BLOCKED_COUNTER_THRESHOLD             60    // 60  =>  3 seconds
+  #define MOTOR_BLOCKED_MOTOR_CURRENT_THRESHOLD_X5    100   // 100  => (100 * 0.156A) / 5 = 3.12 ampere
   #define MOTOR_BLOCKED_ERPS_THRESHOLD                10    // 10 ERPS
-  #define MOTOR_BLOCKED_RESET_COUNTER_THRESHOLD       100   // 100  =>  10 seconds
+  #define MOTOR_BLOCKED_RESET_COUNTER_THRESHOLD       60    // 60  => 3 seconds
   
-  static uint8_t ui8_motor_blocked_counter;
-  static uint8_t ui8_motor_blocked_reset_counter;
+  static uint8_t ui8_motor_blocked_counter = 0;
+  static uint8_t ui8_motor_blocked_reset_counter = 0;
 
-  // if the motor blocked error is enabled start resetting it
-  if (ui8_m_system_state & ERROR_MOTOR_BLOCKED)
+  // Check if motor is in a blocked condition
+  if ((ui16_g_adc_motor_current_filtered > MOTOR_BLOCKED_MOTOR_CURRENT_THRESHOLD_X5) && 
+      (ui16_motor_get_motor_speed_erps() < MOTOR_BLOCKED_ERPS_THRESHOLD))
   {
-    // increment motor blocked reset counter with 100 milliseconds
+    // Increment motor blocked counter
+    ui8_motor_blocked_counter++;
+    
+    // Check if motor has been blocked long enough to set the error
+    if (ui8_motor_blocked_counter > MOTOR_BLOCKED_COUNTER_THRESHOLD)
+    {
+      // Set motor blocked error code
+      ui8_m_system_state |= ERROR_MOTOR_BLOCKED;
+      
+      // Reset motor blocked counter as the error code is set
+      ui8_motor_blocked_counter = 0;
+    }
+  }
+  // Check if motor blocked error is set and the condition is no longer active
+  else if (ui8_m_system_state & ERROR_MOTOR_BLOCKED)
+  {
+    // Increment motor blocked reset counter
     ui8_motor_blocked_reset_counter++;
     
-    // check if the counter has counted to the set threshold for reset
+    // Check if the reset counter has reached the threshold to clear the error
     if (ui8_motor_blocked_reset_counter > MOTOR_BLOCKED_RESET_COUNTER_THRESHOLD)
     {
-      // reset motor blocked error code
+      // Clear motor blocked error code
       ui8_m_system_state &= ~ERROR_MOTOR_BLOCKED;
       
-      // reset the counter that clears the motor blocked error
+      // Reset the reset counter
       ui8_motor_blocked_reset_counter = 0;
     }
   }
+
+  // No error condition, reset the motor blocked set and reset counters
   else
   {
-    // if battery current (x5) is over the current threshold (x5) and the motor ERPS is below threshold start setting motor blocked error code
-    if ((ui16_g_adc_motor_current_filtered > MOTOR_BLOCKED_MOTOR_CURRENT_THRESHOLD_X5) && (ui16_motor_get_motor_speed_erps() < MOTOR_BLOCKED_ERPS_THRESHOLD))
-    {
-      // increment motor blocked counter with 100 milliseconds
-      ui8_motor_blocked_counter++;
-      
-      // check if motor is blocked for more than some safe threshold
-      if (ui8_motor_blocked_counter > MOTOR_BLOCKED_COUNTER_THRESHOLD)
-      {
-        // set motor blocked error code
-        ui8_m_system_state |= ERROR_MOTOR_BLOCKED;
-        
-        // reset motor blocked counter as the error code is set
-        ui8_motor_blocked_counter = 0;
-      }
-    }
-    else
-    {
-      // current is below the threshold and/or motor ERPS is above the threshold so reset the counter
-      ui8_motor_blocked_counter = 0;
-    }
+    ui8_motor_blocked_counter = 0;
+    ui8_motor_blocked_reset_counter = 0;
   }
 }
