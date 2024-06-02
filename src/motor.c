@@ -382,6 +382,8 @@ uint16_t ui16_duty_cycle_ramp_down_inverse_step;
 uint16_t ui16_counter_duty_cycle_ramp_up = 0;
 uint16_t ui16_counter_duty_cycle_ramp_down = 0;
 
+volatile uint8_t ui8_g_motor_blocked_diag_enable = 1;
+
 volatile uint8_t ui8_g_field_weakening_angle = 0;
 volatile uint8_t ui8_g_field_weakening_enable = 0;
 volatile uint8_t ui8_g_field_weakening_enable_state = 0;

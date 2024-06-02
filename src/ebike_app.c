@@ -786,7 +786,7 @@ static void communications_process_packages(uint8_t ui8_frame_type)
 
       ui8_temp = ui8_rx_buffer[80];
       ui8_g_pedal_cadence_fast_stop = ui8_temp & 1;
-      ui8_g_field_weakening_enable = (ui8_temp & 2) >> 1;
+      ui8_g_motor_blocked_diag_enable = (ui8_temp & 2) >> 1;
       ui8_g_coast_brake_enable = (ui8_temp & 4) >> 2;
       m_config_vars.ui8_motor_current_control_mode = (ui8_temp & 8) >> 3;
 
@@ -1617,7 +1617,8 @@ void check_system()
 
   // Check if motor is in a blocked condition
   if ((ui16_g_adc_motor_current_filtered > MOTOR_BLOCKED_MOTOR_CURRENT_THRESHOLD_X5) && 
-      (ui16_motor_get_motor_speed_erps() < MOTOR_BLOCKED_ERPS_THRESHOLD))
+      (ui16_motor_get_motor_speed_erps() < MOTOR_BLOCKED_ERPS_THRESHOLD) &&
+      (ui8_g_motor_blocked_diag_enable))
   {
     // Increment motor blocked counter
     ui8_motor_blocked_counter++;
